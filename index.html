@@ -1,37 +1,310 @@
-<html>
-  <script src='https://d3js.org/d3.v5.min.js'></script>
-  <style> rect {fill: lightblue; stroke: black;}</style>
-  <body>
-    <svg width=300 height=300></svg>
-    <script>
-      var data = [4,8,15,16,23,42];
-      var margin=50;var width=300;var height=300;
-      var xs = d3.scaleBand().domain([0,1,2,3,4,5]).range([0,200])
-      var hs = d3.scaleLinear().domain([0,42]).range([0,200])
-      d3.select("svg")
-        .attr("width",width + 2*margin)
-        .attr("height",height + 2*margin)
-        .append("g")
-        .attr("transform","translate("+margin+","+margin+")")
-        .selectAll('rect')
-        .data(data)
-        .enter()
-        .append('rect')
-        .attr('x',function(d,i) {return xs(i)})
-        .attr('y',function(d,i) {return 200 - hs(d);})
-        .attr('width',33.3333)
-        .attr('height',function(d,i) {return hs(d);});
-
-      var x = d3.scaleBand().domain([0,1,2,3,4,5]).range([0,200]);
-      var y = d3.scaleLinear().domain([0,42]).range([200,0]);
-      d3.select("svg")
-        .append("g")
-        .attr("transform","translate("+margin+","+margin+")")
-        .call(d3.axisLeft(y))
-      d3.select("svg")
-        .append("g")
-        .attr("transform","translate("+margin+","+(200+margin)+")")
-        .call(d3.axisBottom(x))
-    </script>
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>CO2 Emission</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+  <style>
+    #outer-div {
+      width: 100%;
+      text-align: center;
+    }
+    #inner-div {
+      display: inline-block;
+      margin: 0 auto;
+      padding: 3px;
+    }
+    .bar {fill: steelblue;}
+    .bar:hover {fill: #FF6347;}
+    .circle:hover {opacity: 0.4;}
+    div.tooltip {
+      position: absolute;
+      text-align: center;
+      padding: 5px;
+      font: 12px sans-serif;
+      color: #000;
+      background: lightgreen;
+      border-radius: 8px;
+      pointer-events: none;
+    }
+  </style>
+  <script type="text/javascript">
+    var prev = 0
+    show = (id) => {
+      var pages = document.getElementsByClassName("pages")
+      Array.from(pages).forEach((page) => {
+        page.style.display = 'none'
+      })
+      var e = document.getElementById(id);
+      e.style.display = 'block'
+      if (id == 0) {
+        chart_zero()
+      } else if (id == 1) {
+        chart_one()
+      } else {
+        chart_two()
+      }
+      var pages = document.getElementsByClassName("page-item")
+      Array.from(pages).forEach((page) => {
+        page.classList.remove("active")
+      })
+      var e = document.getElementById("li-" + id);
+      e.classList.add("active")
+      prev = id
+    }
+    previous = () => {
+      if ((prev - 1) >= 0) {
+        show((prev - 1))
+      }
+    }
+    next = () => {
+      if ((prev + 1) <= 2) {
+        show((prev + 1))
+      }
+    }
+  </script>
+</head>
+<body onload="show(0)">
+  <nav aria-label="Page navigation example">
+    <ul class="pagination justify-content-center">
+      <li class="page-item"><a class="page-link" href="#" onclick="previous()">Previous</a></li>
+      <li id="li-0" class="page-item"><a class="page-link" href="#" onclick="show(0)">1</a></li>
+      <li id="li-1" class="page-item"><a class="page-link" href="#" onclick="show(1)">2</a></li>
+      <li id="li-2" class="page-item"><a class="page-link" href="#" onclick="show(2)">3</a></li>
+      <li class="page-item"><a class="page-link" href="#" onclick="next()">Next</a></li>
+    </ul>
+  </nav>
+  <div id="outer-div">
+    <div id="inner-div">
+      <div id="0" class="pages">
+        <h2>First page</h2>
+        <svg id="chart-0" width="1000" height="500"></svg>
+      </div>
+      <div id="1" class="pages">
+        <h2>Second Page</h2>
+        <svg id="chart-1" width="800" height="600"></svg>
+      </div>
+      <div id="2" class="pages">
+        <h2>Third Page</h2>
+        <svg id="chart-2" width="800" height="600"></svg>
+      </div>
+    </div>
+  </div>
+</body>
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<script>
+  chart_zero = () => {
+    var svg = d3.select("#chart-0")
+    var margin = {top:50,right:50,bottom:50,left:50}
+    var width = svg.attr("width") - margin.left - margin.right
+    var height = svg.attr("height") - margin.top - margin.bottom
+    var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    var x = d3.scaleBand().rangeRound([0, width]).padding(0.1)
+    var y = d3.scaleLinear().rangeRound([height, 0])
+    // Define the div for the tooltip
+    var div = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0)
+    // read data
+    d3.csv("data/CO2_total01.csv").then((data) => {
+      x.domain(data.map((d) => { return d.year }))
+      y.domain([0, d3.max(data, (d) => { return Number(d.value) / 1000000 })])
+      // populate x axis labels
+      g.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x).tickValues(x.domain().filter(function(d,i){ return !(i%3) })))
+      // populate y axis labels
+      g.append("g")
+      .call(d3.axisLeft(y))
+      .append("text")
+      .attr("fill", "#000")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", "0.71em")
+      .attr("text-anchor", "end")
+      .text("million")
+      // text label for the x axis
+      svg.append("text")
+      .attr("transform", "translate(" + (width/2+20) + " ," + (height + margin.top + 40) + ")")
+      .style("text-anchor", "middle")
+      .text("Year")
+      // text label for the y axis
+      svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0)
+      .attr("x",0 - (height/2+40))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("World CO2 Emission")
+      // populate bars
+      g.selectAll(".bar")
+      .data(data)
+      .enter()
+      .append("rect")
+      .attr("class", "bar")
+      .attr("x", (d) => { return x(d.year) })
+      .attr("y", (d) => { return y(Number(d.value)/1000000) })
+      .attr("width", x.bandwidth())
+      .attr("height", (d) => { return height - y(Number(d.value)/1000000) })
+      .on("mouseover", (d) => {
+        div.transition().duration(200).style("opacity", 1.0)
+        div	.html("Year: " + d.year + "<br/>" + "CO2 Emission: " + d.value)
+        .style("left", (d3.event.pageX) + "px")
+        .style("top", (d3.event.pageY - 28) + "px")
+      })
+      .on("mouseout", (d) => {
+        div.transition().duration(500).style("opacity", 0)
+      })
+    })
+  }
+</script>
+<script>
+  chart_one = () => {
+    var margin = {top:50,right:50,bottom:50,left:50}
+    var svg = d3.select("#chart-1")
+    var width = svg.attr("width") - margin.left - margin.right
+    var height = svg.attr("height") - margin.top - margin.bottom
+    var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    // scales
+    var x = d3.scaleLinear().range([0, width])
+    var y = d3.scaleLinear().range([height, 0])
+    var c = d3.scaleOrdinal().range(d3.schemeCategory10)
+    // Define the div for the tooltip
+    var div = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0)
+    // read data
+    d3.csv("data/scatterplot_data.csv").then((raw_data) => {
+      var data = []
+      raw_data.forEach((d, i) => {
+        if (Number(d["ElectricityPerCapita"]) && Number(d["GDPPerCapita"])) {
+          data.push({
+            "id": i,
+            "ElectricityPerCapita": Number(d["ElectricityPerCapita"]),
+            "GDPPerCapita": Number(d["GDPPerCapita"]),
+            "CountryName": d["CountryName"]
+          })
+        }
+      })
+      x.domain([0, d3.max(data, (d) => { return d["GDPPerCapita"] })])
+      y.domain([0, d3.max(data, (d) => { return d["ElectricityPerCapita"] })])
+      c.domain([0, d3.max(data, (d) => { return d["id"]})])
+      // populate x axis labels
+    	g.append("g")
+    	.attr("transform", "translate(0," + height + ")")
+    	.call(d3.axisBottom(x).tickFormat(d3.format("~s")))
+      // text label for the y axis
+      svg.append("text")
+      .attr("transform", "translate(" + (width/2+60) + "," + (height + margin.top + 40) + ")")
+      .style("text-anchor", "middle")
+      .text("GDP Per Capita")
+      // populate y axis labels
+      g.append("g")
+      .call(d3.axisLeft(y).tickFormat(d3.format("~s")))
+      // text label for the y axis
+      svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0)
+      .attr("x", 0 - (height/2+40))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Electric Power Consumption (kWh Per Capita)")
+      // Add the scatterplot
+      svg.selectAll(".circle")
+      .data(data)
+      .enter()
+      .append('circle')
+      .attr("class", "circle")
+      .attr("r", 6)
+      .attr('cx', (d) => { return margin.bottom + x(d["GDPPerCapita"]) })
+      .attr('cy', (d) => { return margin.left + y(d["ElectricityPerCapita"]) })
+      .attr('fill',(d) => { return c(d["id"]) })
+      .on("mouseover", (d) => {
+        div.transition().duration(200).style("opacity", 1.0)
+        div.html(
+          "Country Name: " + d["CountryName"] +  "<br/>" +
+          "GDP Per Capita: " + d["GDPPerCapita"] + "<br/>" +
+          "Electric Power Consumption: " + d["ElectricityPerCapita"] +  "<br/>")
+        .style("left", (d3.event.pageX) + "px")
+        .style("top", (d3.event.pageY - 28) + "px")
+      })
+      .on("mouseout", (d) => {
+        div.transition().duration(500).style("opacity", 0)
+      })
+    })
+  }
+</script>
+<script type="text/javascript">
+  chart_two = () => {
+    var margin = {top:50,right:50,bottom:50,left:50}
+    var svg = d3.select("#chart-2")
+    var width = svg.attr("width") - margin.left - margin.right
+    var height = svg.attr("height") - margin.top - margin.bottom
+    var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    // scales
+    var x = d3.scaleLinear().range([0, width])
+    var y = d3.scaleLinear().range([height, 0])
+    var c = d3.scaleOrdinal().range(d3.schemeCategory10)
+    // Define the div for the tooltip
+    var div = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0)
+    // read data
+    d3.csv("data/scatterplot_data.csv").then((raw_data) => {
+      var data = []
+      raw_data.forEach((d, i) => {
+        if (Number(d["ElectricityPerCapita"]) && Number(d["CO2PerCapita"])) {
+          data.push({
+            "id": i,
+            "ElectricityPerCapita": Number(d["ElectricityPerCapita"]),
+            "CO2PerCapita": Number(d["CO2PerCapita"]),
+            "CountryName": d["CountryName"]
+          })
+        }
+      })
+      x.domain([0, d3.max(data, (d) => { return d["ElectricityPerCapita"] })])
+      y.domain([0, d3.max(data, (d) => { return d["CO2PerCapita"] })])
+      c.domain([0, d3.max(data, (d) => { return d["id"] })])
+      // populate x axis labels
+      g.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x).tickFormat(d3.format("~s")))
+      // text label for the y axis
+      svg.append("text")
+      .attr("transform", "translate(" + (width/2+60) + " ," + (height + margin.top + 40) + ")")
+      .style("text-anchor", "middle")
+      .text("Electric Power Consumption (kWh Per Capita)")
+      // populate y axis labels
+      g.append("g")
+      .call(d3.axisLeft(y).tickFormat(d3.format("~s")))
+      // text label for the y axis
+      svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0)
+      .attr("x", 0 - (height/2+40))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("CO2 Emission (Metric Tons Per Capita)")
+      // Add the scatterplot
+      svg.selectAll("circle")
+      .data(data)
+      .enter()
+      .append('circle')
+      .attr("class", "circle")
+      .attr("r", 6)
+      .attr('cx', (d) => { return margin.bottom + x(d["ElectricityPerCapita"]) })
+      .attr('cy', (d) => { return margin.left + y(d["CO2PerCapita"]) })
+      .attr('fill',(d) => { return c(d["id"]) })
+      .on("mouseover", (d) => {
+        div.transition().duration(200).style("opacity", 1.0)
+        div.html(
+          "Country Name: " + d["CountryName"] +  "<br/>" +
+          "CO2 Per Capita: " + d["CO2PerCapita"] + "<br/>" +
+          "Electric Power Consumption: " + d["ElectricityPerCapita"] +  "<br/>")
+        .style("left", (d3.event.pageX) + "px")
+        .style("top", (d3.event.pageY - 28) + "px")
+      })
+      .on("mouseout", (d) => {
+        div.transition().duration(500).style("opacity", 0)
+      })
+    })
+  }
+</script>
 </html>

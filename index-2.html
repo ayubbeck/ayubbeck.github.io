@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<div id="outer-div">
+  <div id="inner-div">
+    <h2>Electric Power Consumption</h2>
+    <svg id="scatterplot" width="800" height="600"></svg>
+  </div>
+</div>
+<style>
+  #outer-div {
+    width: 100%;
+    text-align: center;
+  }
+  #inner-div {
+    display: inline-block;
+    margin: 0 auto;
+    padding: 3px;
+  }
+  .circle:hover {
+    opacity: 0.4;
+  }
+  div.tooltip {
+    position: absolute;
+    text-align: center;
+    padding: 5px;
+    font: 14px sans-serif;
+    color: #000;
+    background: lightgreen;
+    border-radius: 8px;
+    pointer-events: none;
+  }
+</style>
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<script>
+  var margin = {top:50,right:50,bottom:50,left:50}
+  var svg = d3.select("#scatterplot")
+  var width = svg.attr("width") - margin.left - margin.right
+  var height = svg.attr("height") - margin.top - margin.bottom
+  var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+  // scales
+  var x = d3.scaleLinear().range([0, width])
+  var y = d3.scaleLinear().range([height, 0])
+  var c = d3.scaleOrdinal().range(d3.schemeCategory10)
+  // Define the div for the tooltip
+  var div = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0)
+  // read data
+  d3.csv("data/scatterplot_data.csv").then((raw_data) => {
+    var data = []
+    raw_data.forEach((d, i) => {
+      if (Number(d["ElectricityPerCapita"]) && Number(d["GDPPerCapita"])) {
+        data.push({
+          "id": i,
+          "ElectricityPerCapita": Number(d["ElectricityPerCapita"]),
+          "GDPPerCapita": Number(d["GDPPerCapita"]),
+          "CountryName": d["CountryName"]
+        })
+      }
+    })
+    x.domain([0, d3.max(data, (d) => { return d["GDPPerCapita"] })])
+    y.domain([0, d3.max(data, (d) => { return d["ElectricityPerCapita"] })])
+    c.domain([0, d3.max(data, (d) => { return d["id"]})])
+    // populate x axis labels
+  	g.append("g")
+  	.attr("transform", "translate(0," + height + ")")
+  	.call(d3.axisBottom(x).tickFormat(d3.format("~s")))
+    // text label for the y axis
+    svg.append("text")
+    .attr("transform", "translate(" + (width/2+60) + "," + (height + margin.top + 40) + ")")
+    .style("text-anchor", "middle")
+    .text("GDP Per Capita")
+    // populate y axis labels
+    g.append("g")
+    .call(d3.axisLeft(y).tickFormat(d3.format("~s")))
+    // text label for the y axis
+    svg.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 0)
+    .attr("x", 0 - (height/2+40))
+    .attr("dy", "1em")
+    .style("text-anchor", "middle")
+    .text("Electric Power Consumption (kWh Per Capita)")
+    // Add the scatterplot
+    svg.selectAll(".circle")
+    .data(data)
+    .enter()
+    .append('circle')
+    .attr("class", "circle")
+    .attr("r", 6)
+    .attr('cx', (d) => { return margin.bottom + x(d["GDPPerCapita"]) })
+    .attr('cy', (d) => { return margin.left + y(d["ElectricityPerCapita"]) })
+    .attr('fill',(d) => { return c(d["id"]) })
+    .on("mouseover", (d) => {
+      div.transition().duration(200).style("opacity", 1.0)
+      div.html(
+        "Country Name: " + d["CountryName"] +  "<br/>" +
+        "GDP Per Capita: " + d["GDPPerCapita"] + "<br/>" +
+        "Electric Power Consumption: " + d["ElectricityPerCapita"] +  "<br/>")
+      .style("left", (d3.event.pageX) + "px")
+      .style("top", (d3.event.pageY - 28) + "px")
+    })
+    .on("mouseout", (d) => {
+      div.transition().duration(500).style("opacity", 0)
+    })
+  })
+</script>

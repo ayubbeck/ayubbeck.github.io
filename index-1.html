@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<div id="outer-div">
+  <div id="inner-div">
+    <h2>CO2 emissions (kt)</h2>
+    <svg id="bar-chart" width="1000" height="500"></svg>
+  </div>
+</div>
+<style>
+  #outer-div {
+    width: 100%;
+    text-align: center;
+  }
+  #inner-div {
+    display: inline-block;
+    margin: 0 auto;
+    padding: 3px;
+  }
+	.bar {fill: steelblue;}
+	.bar:hover {fill: #FF6347;}
+  div.tooltip {
+    position: absolute;
+    text-align: center;
+    padding: 5px;
+    font: 12px sans-serif;
+    color: #000;
+    background: lightgreen;
+    border-radius: 8px;
+    pointer-events: none;
+  }
+</style>
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<script>
+  var svg = d3.select("#bar-chart")
+  var margin = {top:50,right:50,bottom:50,left:50}
+  var width = svg.attr("width") - margin.left - margin.right
+  var height = svg.attr("height") - margin.top - margin.bottom
+  var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+  var x = d3.scaleBand().rangeRound([0, width]).padding(0.1)
+  var y = d3.scaleLinear().rangeRound([height, 0])
+  // Define the div for the tooltip
+  var div = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0)
+  // read data
+  d3.csv("data/CO2_total01.csv").then((data) => {
+  	x.domain(data.map((d) => { return d.year }))
+  	y.domain([0, d3.max(data, (d) => { return Number(d.value) / 1000000 })])
+    // populate x axis labels
+  	g.append("g")
+  	.attr("transform", "translate(0," + height + ")")
+  	.call(d3.axisBottom(x).tickValues(x.domain().filter(function(d,i){ return !(i%3) })))
+    // populate y axis labels
+  	g.append("g")
+  	.call(d3.axisLeft(y))
+  	.append("text")
+  	.attr("fill", "#000")
+  	.attr("transform", "rotate(-90)")
+  	.attr("y", 6)
+  	.attr("dy", "0.71em")
+  	.attr("text-anchor", "end")
+    .text("million")
+    // text label for the x axis
+    svg.append("text")
+    .attr("transform", "translate(" + (width/2+20) + " ," + (height + margin.top + 40) + ")")
+    .style("text-anchor", "middle")
+    .text("Year")
+    // text label for the y axis
+    svg.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 0)
+    .attr("x",0 - (height/2+40))
+    .attr("dy", "1em")
+    .style("text-anchor", "middle")
+    .text("World CO2 Emission")
+    // populate bars
+  	g.selectAll(".bar")
+  	.data(data)
+  	.enter()
+    .append("rect")
+  	.attr("class", "bar")
+  	.attr("x", (d) => { return x(d.year) })
+  	.attr("y", (d) => { return y(Number(d.value)/1000000) })
+  	.attr("width", x.bandwidth())
+  	.attr("height", (d) => { return height - y(Number(d.value)/1000000) })
+    .on("mouseover", (d) => {
+      div.transition().duration(200).style("opacity", 1.0)
+      div	.html("Year: " + d.year + "<br/>" + "CO2 Emission: " + d.value)
+      .style("left", (d3.event.pageX) + "px")
+      .style("top", (d3.event.pageY - 28) + "px")
+    })
+    .on("mouseout", (d) => {
+      div.transition().duration(500).style("opacity", 0)
+    })
+  })
+</script>
