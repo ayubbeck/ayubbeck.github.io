@@ -1,0 +1,155 @@
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<style>
+  #outer-div {
+    width: 100%;
+    text-align: center;
+  }
+  #inner-div {
+    display: inline-block;
+    margin: 0 auto;
+    padding: 3px;
+  }
+  div.tooltip {
+    position: absolute;
+    text-align: left;
+    padding: 5px;
+    border-radius: 5px;
+    box-shadow: 1px 1px 1px 1px grey;
+  }
+</style>
+<div id="outer-div">
+  <div id="inner-div">
+    <!-- <svg id="chart-2" width="800" height="600" onload="topEmission('coal',4,'Top Countries, CO2 Emission From Coal',9,'billion')"></svg> -->
+    <!-- <svg id="chart-2" width="800" height="600" onload="topEmission('gas',4,'Top Countries, CO2 Emission From Gas',6,'million')"></svg> -->
+    <svg id="chart-2" width="800" height="600" onload="topEmission('oil',4,'Top Countries, CO2 Emission From Oil',9,'billion')"></svg>
+    <div id='tooltip' class="tooltip"></div>
+  </div>
+</div>
+<script>
+  topEmission = (fuelType,topCountries,title,power,sign) => {
+    const color = ["#ff0000","#13155e","#c86000","#009B77","#0049B7"]
+    var svg = d3.select("#chart-2")
+    const tooltip = d3.select('#tooltip')
+    const tooltipLine = svg.append('line')
+    const margin = {top:50, right:100, bottom:50, left:100}
+    const width = svg.attr("width") - margin.left - margin.right
+    const height = svg.attr("height") - margin.top - margin.bottom
+    const x = d3.scaleLinear().range([0, width])
+    const y = d3.scaleLinear().range([height, 0])
+
+    svg.append("text")
+    .attr("transform", "translate(" + (width/2+margin.left) + " ," + 30 + ")")
+    .style("text-anchor", "middle")
+    .style("font", "20px avenir")
+    .text(title)
+
+    const line = d3.line().x(d => margin.left + x(d.year)).y(d => margin.bottom + y(d.emission)).curve(d3.curveMonotoneX)
+    var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    let fuel, tipBox
+    d3.csv("data/co2-emissions-by-fuel-line.csv").then((data) => {
+      fuel = []
+      var country = {}
+      data.forEach((d, i) => {
+        if (Number(d["year"]) >= 1900 && d["code"] != "OWID_WRL") {
+          if (!country.hasOwnProperty(d["code"])) {
+            country[d["code"]] = {"name":d["entity"],"currentEmission":0,"history":[]}
+          }
+          country[d["code"]]["history"].push({ "year":Number(d["year"]),"emission":Number(d[fuelType]) })
+          country[d["code"]]["currentEmission"] = Number(d[fuelType])
+        }
+      })
+      Object.keys(country).forEach((item, i) => {
+        fuel.push(country[item])
+      })
+      fuel = fuel.sort((a, b) => (a.currentEmission > b.currentEmission) ? -1 : 1).slice(0,topCountries)
+      fuel.forEach((item, i) => {
+        item["color"] = color[i]
+      })
+      // domains
+      const minYear = d3.min(fuel,(d) => {return d3.min(d["history"], (d) => {return d["year"]})})
+      const maxYear = d3.max(fuel,(d) => {return d3.max(d["history"], (d) => {return d["year"]})})
+      x.domain([minYear,maxYear])
+      y.domain([0,d3.max(fuel, (d) => { return  d3.max(d["history"], (d) => {return d["emission"]}) })])
+      // populate x axis labels
+      g.append("g")
+    	.attr("transform", "translate(0," + height + ")")
+    	.call(d3.axisBottom(x).tickValues([minYear,1925,1950,1975,2000,maxYear]).tickFormat(d3.format("d")))
+      // text label for the x axis
+      svg.append("text")
+      .attr("transform", "translate(" + (width/2+margin.left) + " ," + (height + 2*margin.top) + ")")
+      .style("text-anchor", "middle")
+      .style("font", "16px avenir")
+      .text("Year")
+      // populate y axis labels
+      g.append("g")
+      .call(d3.axisLeft(y).tickFormat((d) => {return d3.format(",.2r")(d/Math.pow(10,power)) + ' ' + sign}))
+      // draw line
+      svg.selectAll()
+        .data(fuel).enter()
+        .append('path')
+        .attr('fill', 'none')
+        .attr('stroke', d => d["color"])
+        .attr('stroke-width', 2)
+        .datum(d => d["history"])
+        .attr('d', line)
+      // add type of fuel
+      svg.selectAll()
+        .data(fuel).enter()
+        .append('text')
+        .html(d => d["name"])
+        .attr('fill', d => d["color"])
+        .attr('alignment-baseline', 'middle')
+        .attr('x', width + margin.left)
+        .attr('dx', '.5em')
+        .attr('y', d => margin.bottom  + y(d["currentEmission"]))
+      // add type of tipBox
+      tipBox = svg.append('rect')
+        .attr('x',margin.left)
+        .attr('y',margin.bottom)
+        .attr('width', width)
+        .attr('height', height)
+        .attr('opacity', 0)
+        .on('mousemove', drawTooltip)
+        .on('mouseout', removeTooltip)
+    })
+    removeTooltip = () => {
+      if (tooltip) tooltip.style('display', 'none')
+      if (tooltipLine) tooltipLine.attr('stroke', 'none')
+    }
+    drawTooltip = () => {
+      const year = Math.ceil(x.invert(d3.mouse(tipBox.node())[0]-margin.left))
+      fuel.sort((a, b) => {
+        var aFind = a.history.find(h => h.year == year)
+        var bFind = b.history.find(h => h.year == year)
+        if (aFind && bFind) {
+          return bFind.emission - aFind.emission;
+        }
+        else {
+          return 0
+        }
+      })
+      tooltipLine.attr('stroke', 'lightgrey')
+        .attr('x1', x(year)+margin.left)
+        .attr('x2', x(year)+margin.right)
+        .attr('y1', 50)
+        .attr('y2', height+50)
+      tooltip.html('Year: ' + year)
+        .style('display', 'block')
+        .style('background', 'white')
+        .style('left', d3.event.pageX + 10)
+        .style('top', d3.event.pageY - 50)
+        .selectAll()
+        .data(fuel).enter()
+        .append('div')
+        .style('color', d => d["color"])
+        .html((d) => {
+          var item = d.history.find(d => d.year === year)
+          if (item) {
+            return ' ' + d.name + ': ' + d3.format(",.2r")(item.emission/Math.pow(10,power)) + ' ' + sign
+          } else {
+            return ' ' + d.name + ': ' + 0 + ' ' + sign
+          }
+        })
+    }
+  }
+</script>

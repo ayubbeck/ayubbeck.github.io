@@ -1,0 +1,107 @@
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<style>
+  #outer-div {
+    width: 100%;
+    text-align: center;
+  }
+  #inner-div {
+    display: inline-block;
+    margin: 0 auto;
+    padding: 3px;
+  }
+  .oil_line {
+    fill: none;
+    stroke: #ffab00;
+    stroke-width: 1.5;
+  }
+  .coal_line {
+    fill: none;
+    stroke: #0074D9;
+    stroke-width: 1.5;
+  }
+  .gas_line {
+    fill: none;
+    stroke: #2ECC40;
+    stroke-width: 1.5;
+  }
+  .path:hover {
+    opacity: 0.4;
+  }
+  div.tooltip {
+    position: absolute;
+    text-align: center;
+    padding: 5px;
+    font: 14px sans-serif;
+    color: #000;
+    background: lightgreen;
+    border-radius: 8px;
+    pointer-events: none;
+  }
+</style>
+<div id="outer-div">
+  <div id="inner-div">
+    <h2>CO2 Emissions  By Fuel, World</h2>
+    <svg id="chart-1" width="800" height="600"></svg>
+  </div>
+</div>
+<script>
+  var svg = d3.select("#chart-1")
+  const margin = {top:50, right:50, bottom:50, left:100}
+  const width = svg.attr("width") - margin.left - margin.right
+  const height = svg.attr("height") - margin.top - margin.bottom
+  const x = d3.scaleLinear().range([0, width])
+  const y = d3.scaleLinear().range([height, 0])
+
+  const oil_line = d3.line().x(d => margin.left + x(d["year"])).y(d => margin.bottom + y(d["oil"])).curve(d3.curveMonotoneX)
+  const coal_line = d3.line().x(d => margin.left + x(d["year"])).y(d => margin.bottom + y(d["coal"])).curve(d3.curveMonotoneX)
+  const gas_line = d3.line().x(d => margin.left + x(d["year"])).y(d => margin.bottom  + y(d["gas"])).curve(d3.curveMonotoneX)
+
+  var tooltip = d3.select("body").append("div").attr("class", "tooltip").style("opacity", 0)
+  var tooltipLine = svg.append('line')
+  var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+  d3.csv("data/co2-emissions-by-fuel-line.csv").then((data) => {
+    var world_co2 = []
+    data.forEach((d, i) => {
+      if (d["code"] == "OWID_WRL") {
+        world_co2.push({
+          "year":Number(d["year"]),
+          "oil":Number(d["oil"]),
+          "coal":Number(d["coal"]),
+          "gas":Number(d["gas"])
+        })
+      }
+    })
+    // domains
+    x.domain([d3.min(world_co2, (d) => {return d["year"]}),d3.max(world_co2, (d) => {return d["year"]})])
+    y.domain([0,d3.max(world_co2, (d) => { return  d3.max([d["oil"],d["coal"],d["gas"]]) })])
+    // populate x axis labels
+    g.append("g")
+  	.attr("transform", "translate(0," + height + ")")
+  	.call(d3.axisBottom(x).tickValues([1800,1850,1900,1950,2000,2018]).tickFormat(d3.format("d")))
+    // populate y axis labels
+    g.append("g")
+    .call(d3.axisLeft(y).tickFormat((d) => {return d/1000000000 + " bln"}))
+    // draw line
+    svg.append("path")
+    .datum(world_co2)
+    .attr("class", "oil_line")
+    .attr("d", oil_line)
+
+    svg.append("path")
+    .datum(world_co2)
+    .attr("class", "coal_line")
+    .attr("d", coal_line)
+
+    svg.append("path")
+    .datum(world_co2)
+    .attr("class", "gas_line")
+    .attr("d", gas_line)
+
+
+
+    console.log(world_co2)
+
+
+  })
+</script>
