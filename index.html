@@ -2,6 +2,7 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+<script src='https://d3js.org/d3.v5.min.js'></script>
 <style>
   #outer-div {
     width: 100%;
@@ -13,6 +14,7 @@
     padding: 3px;
   }
   #tooltip {
+    display: none;
     position: absolute;
     text-align: left;
     padding: 5px;
@@ -24,12 +26,8 @@
 <script type="text/javascript">
   var prev = 0
   show = (id) => {
-    var pages = document.getElementsByClassName("pages")
-    Array.from(pages).forEach((page) => {
-      page.style.display = 'none'
-    })
-    var e = document.getElementById(id);
-    e.style.display = 'block'
+    d3.select("#chart").remove()
+    d3.select("#inner-div").append("svg").attr("id","chart").attr("width", 800).attr("height", 600)
     if (id == 1) {
       chart_one()
     }
@@ -38,7 +36,7 @@
     } else if (id == 3) {
       topEmission('oil',4,'Top Countries, CO2 Emission From Oil',9,'billion','chart-3','tooltip')
     } else {
-      topEmission('gas',4,'Top Countries, CO2 Emission From Gas',6,'million','chart-4','tooltip')
+      topEmission('gas',4,'Top Countries, CO2 Emission From Gas',9,'billion','chart-4','tooltip')
     }
     var pages = document.getElementsByClassName("page-item")
     Array.from(pages).forEach((page) => {
@@ -69,30 +67,16 @@
     <li id="li-4" class="page-item"><a class="page-link" href="#" onclick="show(4)">4</a></li>
     <li class="page-item"><a class="page-link" href="#" onclick="next()">Next</a></li>
   </ul>
-
   <div id="outer-div">
     <div id="inner-div">
-      <div id="1" class="pages">
-        <svg id="chart-1" width="800" height="600"></svg>
-      </div>
-      <div id="2" class="pages">
-        <svg id="chart-2" width="800" height="600"></svg>
-      </div>
-      <div id="3" class="pages">
-        <svg id="chart-3" width="800" height="600"></svg>->
-      </div>
-      <div id="4" class="pages">
-        <svg id="chart-4" width="800" height="600"></svg>
-      </div>
       <div id='tooltip'></div>
     </div>
   </div>
 </body>
-<script src='https://d3js.org/d3.v5.min.js'></script>
 <script>
   topEmission = (fuelType,topCountries,title,power,sign,chartId,toolTipId) => {
     const color = ["#ff0000","#13155e","#c86000","#009B77","#0049B7"]
-    var svg = d3.select("#"+chartId)
+    var svg = d3.select("#chart")
     const tooltip = d3.select('#tooltip')
     const tooltipLine = svg.append('line')
     const margin = {top:50, right:100, bottom:50, left:100}
@@ -147,25 +131,35 @@
       // populate y axis labels
       g.append("g")
       .call(d3.axisLeft(y).tickFormat((d) => {return d3.format(",.2r")(d/Math.pow(10,power)) + ' ' + sign}))
-      // draw line
-      svg.selectAll()
-        .data(fuel).enter()
-        .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', d => d["color"])
-        .attr('stroke-width', 1.5)
-        .datum(d => d["history"])
-        .attr('d', line)
+      // draw line with animation
+      var path = svg.selectAll()
+                    .data(fuel).enter()
+                    .append('path')
+                    .attr('fill', 'none')
+                    .attr('stroke', d => d["color"])
+                    .attr('stroke-width', 1.5)
+                    .datum(d => d["history"])
+                    .attr('d', line)
+      var totalLength = path.node().getTotalLength() + margin.left + margin.right
+      path.attr("stroke-dasharray", totalLength + " " + totalLength)
+      	.attr("stroke-dashoffset", totalLength)
+        .transition()
+      	.duration(1500)
+      	.ease(d3.easeLinear)
+      	.attr("stroke-dashoffset", 0)
       // add type of fuel
       svg.selectAll()
         .data(fuel).enter()
         .append('text')
         .html(d => d["name"])
-        .attr('fill', d => d["color"])
+        .attr('fill', 'white')
         .attr('alignment-baseline', 'middle')
         .attr('x', width + margin.left)
         .attr('dx', '.5em')
         .attr('y', d => margin.bottom  + y(d["currentEmission"]))
+        .transition()
+        .duration(2000)
+        .attr('fill', d => d["color"])
       // add type of tipBox
       tipBox = svg.append('rect')
         .attr('x',margin.left)
@@ -185,12 +179,8 @@
       fuel.sort((a, b) => {
         var aFind = a.history.find(h => h.year == year)
         var bFind = b.history.find(h => h.year == year)
-        if (aFind && bFind) {
-          return bFind.emission - aFind.emission;
-        }
-        else {
-          return 0
-        }
+        if (aFind && bFind) { return bFind.emission - aFind.emission; }
+        else { return 0 }
       })
       tooltipLine.attr('stroke', 'lightgrey')
         .attr('x1', x(year)+margin.left)
@@ -219,7 +209,7 @@
 
 <script>
   chart_one = () => {
-    var svg = d3.select("#chart-1")
+    var svg = d3.select("#chart")
     const tooltip = d3.select('#tooltip')
     const tooltipLine = svg.append('line')
     const margin = {top:50, right:100, bottom:50, left:100}
@@ -279,25 +269,35 @@
       // populate y axis labels
       g.append("g")
       .call(d3.axisLeft(y).tickFormat((d) => {return d/1000000000 + " bln"}))
-      // draw line
-      svg.selectAll()
-        .data(fuel).enter()
-        .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', d => d["color"])
-        .attr('stroke-width', 1.5)
-        .datum(d => d["history"])
-        .attr('d', line)
+      // draw line with animation
+      var path = svg.selectAll()
+                    .data(fuel).enter()
+                    .append('path')
+                    .attr('fill', 'none')
+                    .attr('stroke', d => d["color"])
+                    .attr('stroke-width', 1.5)
+                    .datum(d => d["history"])
+                    .attr('d', line)
+      var totalLength = path.node().getTotalLength() + margin.left + margin.right
+      path.attr("stroke-dasharray", totalLength + " " + totalLength)
+      	.attr("stroke-dashoffset", totalLength)
+        .transition()
+      	.duration(1500)
+      	.ease(d3.easeLinear)
+      	.attr("stroke-dashoffset", 0)
       // add type of fuel
       svg.selectAll()
         .data(fuel).enter()
         .append('text')
         .html(d => d["type"])
-        .attr('fill', d => d["color"])
+        .attr('fill', 'white')
         .attr('alignment-baseline', 'middle')
         .attr('x', width + margin.left)
         .attr('dx', '.5em')
         .attr('y', d => margin.bottom  + y(d["currentEmission"]))
+        .transition()
+        .duration(2000)
+        .attr('fill', d => d["color"])
       // add type of tipBox
       tipBox = svg.append('rect')
         .attr('x',margin.left)
