@@ -1,79 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <title>CO2 Emission</title>
-  <meta charset="utf-8">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
-  <style>
-    #outer-div {
-      width: 100%;
-      text-align: center;
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+<style>
+  #outer-div {
+    width: 100%;
+    text-align: center;
+  }
+  #inner-div {
+    display: inline-block;
+    margin: 0 auto;
+    padding: 3px;
+  }
+  #tooltip {
+    position: absolute;
+    text-align: left;
+    padding: 5px;
+    border-radius: 5px;
+    box-shadow: 1px 1px 1px 1px grey;
+    background: white;
+  }
+</style>
+<script type="text/javascript">
+  var prev = 0
+  show = (id) => {
+    var pages = document.getElementsByClassName("pages")
+    Array.from(pages).forEach((page) => {
+      page.style.display = 'none'
+    })
+    var e = document.getElementById(id);
+    e.style.display = 'block'
+    if (id == 1) {
+      chart_one()
     }
-    #inner-div {
-      display: inline-block;
-      margin: 0 auto;
-      padding: 3px;
+    else if (id == 2) {
+      topEmission('coal',4,'Top Countries, CO2 Emission From Coal',9,'billion','chart-2','tooltip')
+    } else if (id == 3) {
+      topEmission('oil',4,'Top Countries, CO2 Emission From Oil',9,'billion','chart-3','tooltip')
+    } else {
+      topEmission('gas',4,'Top Countries, CO2 Emission From Gas',6,'million','chart-4','tooltip')
     }
-    div.tooltip {
-      position: absolute;
-      text-align: left;
-      padding: 5px;
-      border-radius: 5px;
-      box-shadow: 1px 1px 1px 1px grey;
+    var pages = document.getElementsByClassName("page-item")
+    Array.from(pages).forEach((page) => {
+      page.classList.remove("active")
+    })
+    var e = document.getElementById("li-" + id);
+    e.classList.add("active")
+    prev = id
+  }
+  previous = () => {
+    if ((prev - 1) > 0) {
+      show((prev - 1))
     }
-  </style>
-  <script type="text/javascript">
-    var prev = 0
-    show = (id) => {
-      var pages = document.getElementsByClassName("pages")
-      Array.from(pages).forEach((page) => {
-        page.style.display = 'none'
-      })
-      var e = document.getElementById(id);
-      e.style.display = 'block'
-      if (id == 1) {
-        chart_one()
-      } else if (id == 2) {
-        topEmission('coal',4,'Top Countries, CO2 Emission From Coal',9,'billion','chart-2')
-      } else if (id == 3) {
-        topEmission('oil',4,'Top Countries, CO2 Emission From Oil',9,'billion','chart-3')
-      } else {
-        topEmission('gas',4,'Top Countries, CO2 Emission From Gas',6,'million','chart-4')
-      }
-      var pages = document.getElementsByClassName("page-item")
-      Array.from(pages).forEach((page) => {
-        page.classList.remove("active")
-      })
-      var e = document.getElementById("li-" + id);
-      e.classList.add("active")
-      prev = id
+  }
+  next = () => {
+    if ((prev + 1) <= 4) {
+      show((prev + 1))
     }
-    previous = () => {
-      if ((prev - 1) > 0) {
-        show((prev - 1))
-      }
-    }
-    next = () => {
-      if ((prev + 1) <= 4) {
-        show((prev + 1))
-      }
-    }
-  </script>
-</head>
+  }
+</script>
 <body onload="show(1)">
-  <nav aria-label="Page navigation example">
-    <ul class="pagination justify-content-center">
-      <li class="page-item"><a class="page-link" href="#" onclick="previous()">Previous</a></li>
-      <li id="li-1" class="page-item"><a class="page-link" href="#" onclick="show(1)">1</a></li>
-      <li id="li-2" class="page-item"><a class="page-link" href="#" onclick="show(2)">2</a></li>
-      <li id="li-3" class="page-item"><a class="page-link" href="#" onclick="show(3)">3</a></li>
-      <li id="li-4" class="page-item"><a class="page-link" href="#" onclick="show(4)">4</a></li>
-      <li class="page-item"><a class="page-link" href="#" onclick="next()">Next</a></li>
-    </ul>
-  </nav>
+  <br /><br />
+  <ul class="pagination justify-content-center">
+    <li class="page-item"><a class="page-link" href="#" onclick="previous()">Previous</a></li>
+    <li id="li-1" class="page-item"><a class="page-link" href="#" onclick="show(1)">1</a></li>
+    <li id="li-2" class="page-item"><a class="page-link" href="#" onclick="show(2)">2</a></li>
+    <li id="li-3" class="page-item"><a class="page-link" href="#" onclick="show(3)">3</a></li>
+    <li id="li-4" class="page-item"><a class="page-link" href="#" onclick="show(4)">4</a></li>
+    <li class="page-item"><a class="page-link" href="#" onclick="next()">Next</a></li>
+  </ul>
+
   <div id="outer-div">
     <div id="inner-div">
       <div id="1" class="pages">
@@ -83,19 +79,18 @@
         <svg id="chart-2" width="800" height="600"></svg>
       </div>
       <div id="3" class="pages">
-        <svg id="chart-3" width="800" height="600"></svg>
+        <svg id="chart-3" width="800" height="600"></svg>->
       </div>
       <div id="4" class="pages">
         <svg id="chart-4" width="800" height="600"></svg>
       </div>
-      <div id='tooltip' class="tooltip"></div>
+      <div id='tooltip'></div>
     </div>
   </div>
 </body>
 <script src='https://d3js.org/d3.v5.min.js'></script>
-
 <script>
-  topEmission = (fuelType,topCountries,title,power,sign,chartId) => {
+  topEmission = (fuelType,topCountries,title,power,sign,chartId,toolTipId) => {
     const color = ["#ff0000","#13155e","#c86000","#009B77","#0049B7"]
     var svg = d3.select("#"+chartId)
     const tooltip = d3.select('#tooltip')
@@ -204,7 +199,6 @@
         .attr('y2', height+50)
       tooltip.html('Year: ' + year)
         .style('display', 'block')
-        .style('background', 'white')
         .style('left', d3.event.pageX + 10)
         .style('top', d3.event.pageY - 50)
         .selectAll()
@@ -243,7 +237,7 @@
     const line = d3.line().x(d => margin.left + x(d.year)).y(d => margin.bottom + y(d.emission)).curve(d3.curveMonotoneX)
 
     var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-    let fuel, tipBox
+    let fuel, tipBox;
     d3.csv("data/co2-emissions-by-fuel-line.csv").then((data) => {
       fuel = [
         {"type":"Oil","color":"#B10DC9","currentEmission":0,"history":[]},
@@ -291,7 +285,7 @@
         .append('path')
         .attr('fill', 'none')
         .attr('stroke', d => d["color"])
-        .attr('stroke-width', 2)
+        .attr('stroke-width', 1.5)
         .datum(d => d["history"])
         .attr('d', line)
       // add type of fuel
@@ -311,36 +305,46 @@
         .attr('width', width)
         .attr('height', height)
         .attr('opacity', 0)
-        .on('mousemove', drawTooltip)
-        .on('mouseout', removeTooltip)
+        .on('mousemove', drawsTooltip)
+        .on('mouseout', removesTooltip)
     })
-    removeTooltip = () => {
+    removesTooltip = () => {
       if (tooltip) tooltip.style('display', 'none');
       if (tooltipLine) tooltipLine.attr('stroke', 'none');
     }
-    drawTooltip = () => {
+    drawsTooltip = () => {
       const year = Math.ceil(x.invert(d3.mouse(tipBox.node())[0]-margin.left))
       fuel.sort((a, b) => {
-        return b.history.find(h => h.year == year).emission - a.history.find(h => h.year == year).emission;
+        var aFind = a.history.find(h => h.year == year)
+        var bFind = b.history.find(h => h.year == year)
+        if (aFind && bFind) {
+          return bFind.emission - aFind.emission;
+        }
+        else {
+          return 0
+        }
       })
       tooltipLine.attr('stroke', 'lightgrey')
         .attr('x1', x(year)+margin.left)
         .attr('x2', x(year)+margin.right)
         .attr('y1', 50)
-        .attr('y2', height+50);
+        .attr('y2', height+50)
       tooltip.html('Year: ' + year)
         .style('display', 'block')
-        .style('background', 'white')
         .style('left', d3.event.pageX + 10)
         .style('top', d3.event.pageY - 50)
         .selectAll()
         .data(fuel).enter()
         .append('div')
-        .style('color', d => d.color)
+        .style('color', d => d["color"])
         .html((d) => {
-          return ' ' + d.type + ': ' + d3.format(".1f")(d.history.find(h => h.year == year).emission/1000000000) + ' bln tons'
-        });
+          var item = d.history.find(d => d.year === year)
+          if (item) {
+            return ' ' + d.type + ': ' + d3.format(",.2r")(item.emission/Math.pow(10,9)) + ' billion'
+          } else {
+            return ' ' + d.type + ': ' + 0 + ' billion'
+          }
+        })
     }
   }
 </script>
-</html>
