@@ -4,6 +4,29 @@
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
 <script src='https://d3js.org/d3.v5.min.js'></script>
 <style>
+  .chart-tip {
+    border: 1px solid #E8E8E8;
+    padding: 10px 5px 5px 5px;
+    margin: 5px;
+    background-color: white;
+    font-size: 14px;
+  }
+  .flex-container {
+    display: flex;
+    justify-content: center;
+  }
+  .left {
+    background-color: #F8F8F8;
+    padding: 10px;
+    margin-right: 10px;
+    border-radius: 10px;
+  }
+  .right {
+    width: 30%;
+    background-color: #F8F8F8;
+    padding: 10px;
+    border-radius: 10px;
+  }
   #outer-div {
     width: 100%;
     text-align: center;
@@ -26,17 +49,17 @@
 <script type="text/javascript">
   var prev = 0
   show = (id) => {
-    d3.select("#chart").remove()
-    d3.select("#inner-div").append("svg").attr("id","chart").attr("width", 800).attr("height", 600)
+    d3.select("#svg-chart").remove()
+    d3.select("#svg-chart-div").append("svg").attr("id","svg-chart").attr("width", 800).attr("height", 600)
     if (id == 1) {
       chart_one()
     }
     else if (id == 2) {
-      topEmission('coal',4,'Top Countries, CO2 Emission From Coal',9,'billion','chart-2','tooltip')
+      topEmission('coal',4,'Top CO2 Emitters From Coal',9,'billion','chart-2','tooltip')
     } else if (id == 3) {
-      topEmission('oil',4,'Top Countries, CO2 Emission From Oil',9,'billion','chart-3','tooltip')
+      topEmission('oil',4,'Top CO2 Emitters From Oil',9,'billion','chart-3','tooltip')
     } else {
-      topEmission('gas',4,'Top Countries, CO2 Emission From Gas',9,'billion','chart-4','tooltip')
+      topEmission('gas',4,'Top CO2 Emitters From Gas',9,'billion','chart-4','tooltip')
     }
     var pages = document.getElementsByClassName("page-item")
     Array.from(pages).forEach((page) => {
@@ -67,16 +90,55 @@
     <li id="li-4" class="page-item"><a class="page-link" href="#" onclick="show(4)">4</a></li>
     <li class="page-item"><a class="page-link" href="#" onclick="next()">Next</a></li>
   </ul>
-  <div id="outer-div">
-    <div id="inner-div">
-      <div id='tooltip'></div>
+  <div class="flex-container">
+    <div id="svg-chart-div" class="left">
+    </div>
+    <div class="right">
+      <div id="svg-chart-text">
+      </div>
+      <div class="chart-tip">
+        <strong style="padding-left:20px;">How you can interact with this narrative visualization</strong>
+        <ul>
+          <li>
+            On these charts you see miltiple lines with different colors. Hover over the chart and a tooltip will be displayed.
+            On tooltip, you see year and fuel types / country names and their contribution to CO2 emission.
+          </li>
+          <li>
+            If you like to check out specific scenes, click desired scene from pagination menu located above.
+            If you lick to move on to next or previous scenes, click next or previous options.
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
+  <div id='tooltip'></div>
 </body>
 <script>
   topEmission = (fuelType,topCountries,title,power,sign,chartId,toolTipId) => {
-    const color = ["#ff0000","#13155e","#c86000","#009B77","#0049B7"]
-    var svg = d3.select("#chart")
+    const color = {
+      "USA":"#0652DD",
+      "CHN":"#ff0000",
+      "RUS":"#f638dc",
+      "JPN":"#FF8C00",
+      "IND":"#44bd32",
+      "IRN":"#484848"
+    }
+    var svgText = d3.select("#svg-chart-text")
+    if (fuelType == "coal") {
+      svgText.html(
+        "<h4>Which countries are emiiting the most CO2 from coal?</h4>"
+      )
+    } else if (fuelType == "oil") {
+      svgText.html(
+        "<h4>Which countries are emiiting the most CO2 from oil?</h4>"
+      )
+    } else {
+      svgText.html(
+        "<h4>Which countries are emiiting the most CO2 from gas?</h4>"
+      )
+    }
+
+    var svg = d3.select("#svg-chart")
     const tooltip = d3.select('#tooltip')
     const tooltipLine = svg.append('line')
     const margin = {top:50, right:100, bottom:50, left:100}
@@ -100,7 +162,7 @@
       data.forEach((d, i) => {
         if (Number(d["year"]) >= 1900 && d["code"] != "OWID_WRL") {
           if (!country.hasOwnProperty(d["code"])) {
-            country[d["code"]] = {"name":d["entity"],"currentEmission":0,"history":[]}
+            country[d["code"]] = {"code":d["code"],"name":d["entity"],"currentEmission":0,"history":[]}
           }
           country[d["code"]]["history"].push({ "year":Number(d["year"]),"emission":Number(d[fuelType]) })
           country[d["code"]]["currentEmission"] = Number(d[fuelType])
@@ -110,9 +172,6 @@
         fuel.push(country[item])
       })
       fuel = fuel.sort((a, b) => (a.currentEmission > b.currentEmission) ? -1 : 1).slice(0,topCountries)
-      fuel.forEach((item, i) => {
-        item["color"] = color[i]
-      })
       // domains
       const minYear = d3.min(fuel,(d) => {return d3.min(d["history"], (d) => {return d["year"]})})
       const maxYear = d3.max(fuel,(d) => {return d3.max(d["history"], (d) => {return d["year"]})})
@@ -124,20 +183,34 @@
     	.call(d3.axisBottom(x).tickValues([minYear,1925,1950,1975,2000,maxYear]).tickFormat(d3.format("d")))
       // text label for the x axis
       svg.append("text")
-      .attr("transform", "translate(" + (width/2+margin.left) + " ," + (height + 2*margin.top) + ")")
+      .attr("transform", "translate(" + (width/2+margin.left) + " ," + (height + 2*margin.top-10) + ")")
       .style("text-anchor", "middle")
       .style("font", "16px avenir")
       .text("Year")
       // populate y axis labels
-      g.append("g")
-      .call(d3.axisLeft(y).tickFormat((d) => {return d3.format(",.2r")(d/Math.pow(10,power)) + ' ' + sign}))
+      if (fuelType == "coal") {
+        g.append("g")
+        .call(d3.axisLeft(y).tickFormat((d) => {return d/1000000000 + " billion"}))
+      } else {
+        g.append("g")
+        .call(d3.axisLeft(y).tickFormat((d) => {return d3.format(".1f")(d/Math.pow(10,power)) + ' ' + sign}))
+      }
+      // text label for the y axis
+      svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0)
+      .attr("x",0 - (height/2+40))
+      .attr("dy", margin.left - 60)
+      .style("text-anchor", "middle")
+      .style("font", "16px avenir")
+      .text("CO2 Emission (Billion Tons)")
       // draw line with animation
       var path = svg.selectAll()
                     .data(fuel).enter()
                     .append('path')
                     .attr('fill', 'none')
-                    .attr('stroke', d => d["color"])
-                    .attr('stroke-width', 1.5)
+                    .attr('stroke', d => color[d["code"]])
+                    .attr('stroke-width', 1.7)
                     .datum(d => d["history"])
                     .attr('d', line)
       var totalLength = path.node().getTotalLength() + margin.left + margin.right
@@ -152,14 +225,14 @@
         .data(fuel).enter()
         .append('text')
         .html(d => d["name"])
-        .attr('fill', 'white')
+        .attr('fill', '#f1f1f1')
         .attr('alignment-baseline', 'middle')
         .attr('x', width + margin.left)
         .attr('dx', '.5em')
         .attr('y', d => margin.bottom  + y(d["currentEmission"]))
         .transition()
         .duration(2000)
-        .attr('fill', d => d["color"])
+        .attr('fill', d => color[d["code"]])
       // add type of tipBox
       tipBox = svg.append('rect')
         .attr('x',margin.left)
@@ -194,7 +267,7 @@
         .selectAll()
         .data(fuel).enter()
         .append('div')
-        .style('color', d => d["color"])
+        .style('color', d => color[d["code"]])
         .html((d) => {
           var item = d.history.find(d => d.year === year)
           if (item) {
@@ -209,7 +282,15 @@
 
 <script>
   chart_one = () => {
-    var svg = d3.select("#chart")
+    var svgText = d3.select("#svg-chart-text")
+    svgText.html(
+      "<h4>Where do CO2 Emissions come from?</h4>" +
+      "Carbon dioxide emissions associated with energy and industrial production can come from a range of fuel types. "+
+      "Main energy sources that are contributing to world climate change are coal, oil and gas. Over the first half " +
+      "of the last century, world used coal to produce energy. Usage of oil and gas was not as common. " +
+      "In the second half of past century, usage of all three energy source skyrocketed as Asian industrial scale grew."
+    )
+    var svg = d3.select("#svg-chart")
     const tooltip = d3.select('#tooltip')
     const tooltipLine = svg.append('line')
     const margin = {top:50, right:100, bottom:50, left:100}
@@ -222,7 +303,7 @@
     .attr("transform", "translate(" + (width/2+margin.left) + " ," + 30 + ")")
     .style("text-anchor", "middle")
     .style("font", "20px avenir")
-    .text("CO2 Emissions By Fuel, World")
+    .text("World CO2 Emissions By Fuel")
 
     const line = d3.line().x(d => margin.left + x(d.year)).y(d => margin.bottom + y(d.emission)).curve(d3.curveMonotoneX)
 
@@ -230,9 +311,9 @@
     let fuel, tipBox;
     d3.csv("data/co2-emissions-by-fuel-line.csv").then((data) => {
       fuel = [
-        {"type":"Oil","color":"#B10DC9","currentEmission":0,"history":[]},
-        {"type":"Coal","color":"#0000CD","currentEmission":0,"history":[]},
-        {"type":"Gas","color":"#FF4500","currentEmission":0,"history":[]}
+        {"type":"Oil","color":"#5454c5","currentEmission":0,"history":[]},
+        {"type":"Coal","color":"#ff0000","currentEmission":0,"history":[]},
+        {"type":"Gas","color":"#44bd32","currentEmission":0,"history":[]}
       ]
       data.forEach((d, i) => {
         if (d["code"] == "OWID_WRL" && Number(d["year"]) >= 1900) {
@@ -262,20 +343,29 @@
       .call(d3.axisBottom(x).tickValues([1900,1925,1950,1975,2000,2018]).tickFormat(d3.format("d")))
       // text label for the x axis
       svg.append("text")
-      .attr("transform", "translate(" + (width/2+margin.left) + " ," + (height + 2*margin.top) + ")")
+      .attr("transform", "translate(" + (width/2+margin.left) + " ," + (height + 2*margin.top-10) + ")")
       .style("text-anchor", "middle")
       .style("font", "16px avenir")
       .text("Year")
       // populate y axis labels
       g.append("g")
-      .call(d3.axisLeft(y).tickFormat((d) => {return d/1000000000 + " bln"}))
+      .call(d3.axisLeft(y).tickFormat((d) => {return d/1000000000 + " billion"}))
+      // text label for the y axis
+      svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0)
+      .attr("x",0 - (height/2+40))
+      .attr("dy", margin.left - 60)
+      .style("text-anchor", "middle")
+      .style("font", "16px avenir")
+      .text("CO2 Emission (Billion Tons)")
       // draw line with animation
       var path = svg.selectAll()
                     .data(fuel).enter()
                     .append('path')
                     .attr('fill', 'none')
                     .attr('stroke', d => d["color"])
-                    .attr('stroke-width', 1.5)
+                    .attr('stroke-width', 1.7)
                     .datum(d => d["history"])
                     .attr('d', line)
       var totalLength = path.node().getTotalLength() + margin.left + margin.right
@@ -290,7 +380,7 @@
         .data(fuel).enter()
         .append('text')
         .html(d => d["type"])
-        .attr('fill', 'white')
+        .attr('fill', '#f1f1f1')
         .attr('alignment-baseline', 'middle')
         .attr('x', width + margin.left)
         .attr('dx', '.5em')
