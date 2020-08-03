@@ -100,12 +100,12 @@
         <strong style="padding-left:20px;">How you can interact with this narrative visualization</strong>
         <ul>
           <li>
-            On these charts you see miltiple lines with different colors. Hover over the chart and a tooltip will be displayed.
-            On tooltip, you see year and fuel types / country names and their contribution to CO2 emission.
+            On these charts you see miltiple lines with different colors. Hover over chart to see more data in tooltip.
+            On tooltip, you see year and fuel types/country names and their contribution to CO2 emission.
           </li>
           <li>
-            If you like to check out specific scenes, click desired scene from pagination menu located above.
-            If you lick to move on to next or previous scenes, click next or previous options.
+            If you like to check out specific scenes, click desired scene from navigation menu located above.
+            If you like to move on to next or previous scenes, click next or previous options.
           </li>
         </ul>
       </div>
@@ -126,15 +126,21 @@
     var svgText = d3.select("#svg-chart-text")
     if (fuelType == "coal") {
       svgText.html(
-        "<h4>Which countries are emiiting the most CO2 from coal?</h4>"
+        "<h4>Which countries are emitting the most CO2 from coal?</h4>" +
+        "<p>China's appetite for coal is enormous. As China's manufacturing grew exponentially since 1980s, their " +
+        "usage of coal grew in similar trend. Last 20 years China's CO2 emission from coal grew 300%." +
+        "<p>Another interesting trend on this chart is that United State's CO2 emission from coal decreased significantly. " +
+        "United States has diversified its fuel usage as we see in next slides. It's also important to note that United States " +
+        "investing in renewable energy sources."
       )
     } else if (fuelType == "oil") {
       svgText.html(
-        "<h4>Which countries are emiiting the most CO2 from oil?</h4>"
+        "<h4>Which countries are emitting the most CO2 from oil?</h4>" +
+        "<p>On this chart, you can see the coutnries that are emitting the most CO2 from oil. "
       )
     } else {
       svgText.html(
-        "<h4>Which countries are emiiting the most CO2 from gas?</h4>"
+        "<h4>Which countries are emitting the most CO2 from gas?</h4>"
       )
     }
 
@@ -285,10 +291,13 @@
     var svgText = d3.select("#svg-chart-text")
     svgText.html(
       "<h4>Where do CO2 Emissions come from?</h4>" +
-      "Carbon dioxide emissions associated with energy and industrial production can come from a range of fuel types. "+
+      "<p>Carbon dioxide emissions associated with energy and industrial production can come from a range of fuel types. "+
       "Main energy sources that are contributing to world climate change are coal, oil and gas. Over the first half " +
-      "of the last century, world used coal to produce energy. Usage of oil and gas was not as common. " +
-      "In the second half of past century, usage of all three energy source skyrocketed as Asian industrial scale grew."
+      "of the past century, world used mainly coal to produce energy. " +
+      "In the second half, usage of all three energy sources skyrocketed.</p>" +
+      "<p>In the present day, solid and liquid fuel dominate, although contributions from gas production are also notable. " +
+      "The trends vary significantly by region. In early 1900s, coal fueled the industrial might of Europe and North America. " +
+      "But, Asia and Latin America are still dependent on solid fuel consuption.</p>"
     )
     var svg = d3.select("#svg-chart")
     const tooltip = d3.select('#tooltip')
